@@ -22,6 +22,8 @@ public class Usuario {
 
     private String email;
 
+    private String telefone;
+
     private String senha; 
 
     @Enumerated(EnumType.STRING) 
@@ -32,10 +34,11 @@ public class Usuario {
     }
 
     
-    public Usuario(Long id, String nome, String email, String senha, TipoUsuario tipo) {
+    public Usuario(Long id, String nome, String email, String telefone, String senha, TipoUsuario tipo) {
         this.id = id;
         this.nome = nome;
         this.email = email;
+        this.telefone = telefone;
         this.senha = senha;
         this.tipo = tipo;
     }

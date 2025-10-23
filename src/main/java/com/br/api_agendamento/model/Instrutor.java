@@ -22,6 +22,8 @@ public class Instrutor {
 
     private String nome;
 
+    private String email;
+
     private String especialidade;
 
      @OneToMany(mappedBy = "instrutor", cascade = CascadeType.ALL)
