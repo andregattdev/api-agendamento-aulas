@@ -5,9 +5,9 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.br.api_agendamento.model.Instrutor;
-import com.br.api_agendamento.model.Servico;
 
-public interface InstrutorRepository extends JpaRepository<Servico, Long> {
+
+public interface InstrutorRepository extends JpaRepository<Instrutor, Long> {
     List<Instrutor> findByEspecialidadeContainingIgnoreCase(String especialidade);
 
 }

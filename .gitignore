@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Garante que as senhas fiquem apenas na sua máquina.
+application-local.properties
