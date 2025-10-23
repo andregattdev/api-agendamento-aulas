@@ -16,13 +16,15 @@ controller: Endpoints REST (a ser desenvolvida).
 
 
 
-| Categoria  | Tecnologia | Versão
-| ------------- |:-------------:| |:-------------:|
-| Framework	| Spring Boot	| 3.x
-| Linguagem | Java |	21
-| Persistência | Spring Data JPA / Hibernate
-Banco de Dados  |	MySQL
-Ferramenta |	Maven
+##  Tecnologias Principais
+
+| Categoria | Tecnologia | Versão |
+| :--- | :--- | :---: |
+| Framework | Spring Boot | 3.x |
+| Linguagem | Java | 21 |
+| Persistência | Spring Data JPA / Hibernate | |
+| Banco de Dados | MySQL | |
+| Ferramenta | Maven | |
 
 
 ## Lógica de Negócios Essencial (Mínimo Viável) ##
