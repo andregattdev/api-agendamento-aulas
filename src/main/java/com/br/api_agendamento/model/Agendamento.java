@@ -42,7 +42,7 @@ public class Agendamento {
     private Instrutor instrutor;
 
     @Enumerated(EnumType.STRING)
-    private StatusAgendamento status;
+    private StatusAgendamento status = StatusAgendamento.CONFIRMADO;
     
     private String observacoes; 
 

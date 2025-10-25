@@ -1,57 +1,78 @@
 package com.br.api_agendamento.services;
 
-import java.util.List;
-import java.util.Optional;
+import com.br.api_agendamento.dto.UsuarioRequestDTO;
+import com.br.api_agendamento.exception.RecursoNaoEncontradoException;
+import com.br.api_agendamento.exception.RegraDeNegocioException;
+import com.br.api_agendamento.model.Usuario;
+import com.br.api_agendamento.repositories.UsuarioRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.br.api_agendamento.model.Usuario;
-import com.br.api_agendamento.repositories.UsuarioRepository;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UsuarioService {
 
-    
     @Autowired
-    private  UsuarioRepository usuarioRepository;
+    private UsuarioRepository usuarioRepository;
 
+    
 
-    // CREATE (Cria/Salva um novo Usuário)
-    public Usuario salvar(Usuario usuario) {
-        // Implementar lógica de negócio aqui (ex: validar email)
+    // CREATE
+    public Usuario salvar(UsuarioRequestDTO dto) {
+        // Regra de Negócio: E-mail deve ser único
+        if (usuarioRepository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new RegraDeNegocioException("E-mail já cadastrado para outro usuário.");
+        }
+
+        Usuario usuario = new Usuario();
+        usuario.setNome(dto.getNome());
+        usuario.setEmail(dto.getEmail());
+        usuario.setTelefone(dto.getTelefone());
+        
+        // Se houver campo 'tipo' (Cliente/Admin), defina o tipo padrão aqui.
+
         return usuarioRepository.save(usuario);
     }
 
-    // READ (Busca todos os Usuários)
+    // UPDATE
+    public Usuario atualizar(Long id, UsuarioRequestDTO dto) {
+        return buscarPorId(id).map(usuarioExistente -> {
+            
+            // Regra de Negócio: Se o email mudou, verificar unicidade
+            if (!usuarioExistente.getEmail().equals(dto.getEmail())) {
+                 if (usuarioRepository.findByEmail(dto.getEmail()).isPresent()) {
+                    throw new RegraDeNegocioException("Novo e-mail já cadastrado para outro usuário.");
+                }
+            }
+            
+            usuarioExistente.setNome(dto.getNome());
+            usuarioExistente.setEmail(dto.getEmail());
+            usuarioExistente.setTelefone(dto.getTelefone());
+            
+            return usuarioRepository.save(usuarioExistente);
+        }).orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com ID: " + id));
+    }
+
+    // READ ALL
     public List<Usuario> buscarTodos() {
         return usuarioRepository.findAll();
     }
 
-    // READ (Busca Usuário por ID)
+    // READ BY ID
     public Optional<Usuario> buscarPorId(Long id) {
         return usuarioRepository.findById(id);
     }
 
-    // UPDATE (Atualiza um Usuário) - Reusa o método salvar
-    public Usuario atualizar(Long id, Usuario usuarioAtualizado) {
-        return buscarPorId(id).map(usuarioExistente -> {
-            // Regra: Não se altera o ID
-            usuarioExistente.setNome(usuarioAtualizado.getNome());
-            usuarioExistente.setEmail(usuarioAtualizado.getEmail());
-            usuarioExistente.setTelefone(usuarioAtualizado.getTelefone());
-            
-            // Salva e retorna a entidade atualizada
-            return usuarioRepository.save(usuarioExistente);
-        }).orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id)); 
-        // Em um projeto real, seria uma exceção HTTP 404 customizada
-    }
-
-    // DELETE (Deleta Usuário por ID)
+    // DELETE
     public void deletarPorId(Long id) {
         if (!usuarioRepository.existsById(id)) {
-            throw new RuntimeException("Usuário não encontrado com ID: " + id);
+            throw new RecursoNaoEncontradoException("Usuário não encontrado com ID: " + id);
         }
+        // Em um sistema real, aqui você checaria se o usuário tem agendamentos ativos.
+        
         usuarioRepository.deleteById(id);
     }
 }

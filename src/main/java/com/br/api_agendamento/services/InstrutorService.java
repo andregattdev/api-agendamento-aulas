@@ -1,6 +1,8 @@
 package com.br.api_agendamento.services;
 
-import com.br.api_agendamento.dto.InstrutorRequestDTO; // Importe o DTO
+import com.br.api_agendamento.dto.InstrutorRequestDTO;
+import com.br.api_agendamento.exception.RecursoNaoEncontradoException; // NOVO
+import com.br.api_agendamento.exception.RegraDeNegocioException;      // NOVO
 import com.br.api_agendamento.model.Instrutor;
 import com.br.api_agendamento.repositories.InstrutorRepository;
 
@@ -16,58 +18,58 @@ public class InstrutorService {
     private InstrutorRepository instrutorRepository;
 
     
+
+    // CREATE
     public Instrutor salvar(InstrutorRequestDTO dto) {
         // Lógica de Negócio: Verificar se E-mail já existe
         if (instrutorRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new RuntimeException("E-mail já cadastrado para outro instrutor.");
+            throw new RegraDeNegocioException("E-mail já cadastrado para outro instrutor.");
         }
         
-       
         Instrutor instrutor = new Instrutor();
         instrutor.setNome(dto.getNome());
         instrutor.setEmail(dto.getEmail());
         instrutor.setEspecialidade(dto.getEspecialidade());
-        // Configure outros campos do Instrutor, se houver.
         
         return instrutorRepository.save(instrutor);
     }
 
-    // UPDATE: Recebe o ID e o DTO, busca, atualiza e salva
+    // UPDATE
     public Instrutor atualizar(Long id, InstrutorRequestDTO dto) {
         return buscarPorId(id).map(instrutorExistente -> {
+            
             // Lógica de Negócio: Se o email mudou, verificar unicidade
             if (!instrutorExistente.getEmail().equals(dto.getEmail())) {
                  if (instrutorRepository.findByEmail(dto.getEmail()).isPresent()) {
-                    throw new RuntimeException("Novo e-mail já cadastrado para outro instrutor.");
+                    throw new RegraDeNegocioException("Novo e-mail já cadastrado para outro instrutor.");
                 }
             }
             
-            // Atualiza os campos
             instrutorExistente.setNome(dto.getNome());
             instrutorExistente.setEmail(dto.getEmail());
             instrutorExistente.setEspecialidade(dto.getEspecialidade());
             
             return instrutorRepository.save(instrutorExistente);
-        }).orElseThrow(() -> new RuntimeException("Instrutor não encontrado com ID: " + id));
+        }).orElseThrow(() -> new RecursoNaoEncontradoException("Instrutor não encontrado com ID: " + id));
     }
     
-    
-    
-    public List<Instrutor> buscarTodos() {
-        return instrutorRepository.findAll();
-    }
-
+    // READ
     public Optional<Instrutor> buscarPorId(Long id) {
         return instrutorRepository.findById(id);
     }
     
+    // DELETE
     public void deletarPorId(Long id) {
         if (!instrutorRepository.existsById(id)) {
-            throw new RuntimeException("Instrutor não encontrado com ID: " + id);
+            throw new RecursoNaoEncontradoException("Instrutor não encontrado com ID: " + id);
         }
         instrutorRepository.deleteById(id);
     }
-
+    
+    // Outros métodos READ...
+    public List<Instrutor> buscarTodos() {
+        return instrutorRepository.findAll();
+    }
     public List<Instrutor> buscarPorEspecialidade(String especialidade) {
         return instrutorRepository.findByEspecialidadeContainingIgnoreCase(especialidade);
     }
