@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.br.api_agendamento.services.AutenticacaoService;
 
@@ -24,9 +25,13 @@ public class SecurityConfig {
     @Autowired
     private AutenticacaoService autenticacaoService;
 
+    @Autowired
+    private SecurityFilter securityFilter;
+
     // Injeta o nosso UserDetailsService
     public SecurityConfig(AutenticacaoService autenticacaoService) {
         this.autenticacaoService = autenticacaoService;
+        this.securityFilter = securityFilter;
     }
 
     @Bean
@@ -49,14 +54,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(authorize -> authorize
-                // Vamos liberar o endpoint de login/auth que criaremos em seguida:
-                // .requestMatchers("/auth/**").permitAll() // Se usarmos /auth/login
-                // Mantemos TUDO liberado por enquanto para testar o CRUD
-                .anyRequest().permitAll() 
-            )
-            .httpBasic(withDefaults());
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorize -> authorize
+                        // Vamos liberar o endpoint de login/auth que criaremos em seguida:
+                        // .requestMatchers("/auth/**").permitAll() // Se usarmos /auth/login
+                        // Mantemos TUDO liberado por enquanto para testar o CRUD
+                        .anyRequest().permitAll())
+                .httpBasic(withDefaults());
+
+        // 3. ADICIONA O FILTRO JWT antes do filtro padrão de autenticação
+        http.addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

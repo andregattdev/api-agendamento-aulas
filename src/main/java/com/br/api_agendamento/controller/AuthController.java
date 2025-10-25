@@ -1,6 +1,10 @@
 package com.br.api_agendamento.controller;
 
 import com.br.api_agendamento.dto.LoginRequestDTO;
+import com.br.api_agendamento.dto.LoginResponseDTO;
+import com.br.api_agendamento.model.Usuario;
+import com.br.api_agendamento.services.jwt.TokenService;
+
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,32 +20,34 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     @Autowired
-    public AuthController(AuthenticationManager authenticationManager) {
-        this.authenticationManager = authenticationManager;
-    }
+    private TokenService tokenService;
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody @Valid LoginRequestDTO dto) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequestDTO dto) {
         
-        // 1. Cria o token com as credenciais do DTO
         UsernamePasswordAuthenticationToken authToken = 
             new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getSenha());
         
-        // 2. Tenta autenticar
-        // O AuthenticationManager chama nosso AutenticacaoService e usa o PasswordEncoder.
-        try {
-            Authentication authentication = authenticationManager.authenticate(authToken);
-            
-            // Se a autenticação for bem-sucedida, você retornaria um JWT aqui.
-            // Por enquanto, retornamos um status de sucesso e o email (Username).
-            return ResponseEntity.ok("Login bem-sucedido para o usuário: " + authentication.getName());
-            
-        } catch (Exception e) {
-            // Se falhar (senha incorreta ou usuário não encontrado)
-            return ResponseEntity.status(401).body("Credenciais inválidas: " + e.getMessage());
-        }
+        Authentication authentication = authenticationManager.authenticate(authToken);
+        
+        // 1. Converte o objeto autenticado (UserDetails/Usuario)
+        Usuario usuario = (Usuario) authentication.getPrincipal(); 
+        
+        // 2. GERA o token JWT
+        String jwtToken = tokenService.generateToken(usuario);
+        
+        // 3. Retorna a resposta com o token
+        LoginResponseDTO response = new LoginResponseDTO(
+            jwtToken, 
+            "Bearer", 
+            usuario.getId(), 
+            usuario.getTipo().name()
+        );
+        
+        return ResponseEntity.ok(response);
     }
 }
