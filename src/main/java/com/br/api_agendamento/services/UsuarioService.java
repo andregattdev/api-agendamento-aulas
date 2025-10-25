@@ -7,6 +7,7 @@ import com.br.api_agendamento.model.Usuario;
 import com.br.api_agendamento.repositories.UsuarioRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,7 +19,8 @@ public class UsuarioService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // CREATE
     public Usuario salvar(UsuarioRequestDTO dto) {
@@ -34,6 +36,9 @@ public class UsuarioService {
         
         // Se houver campo 'tipo' (Cliente/Admin), defina o tipo padrão aqui.
 
+        String senhaCriptografada = passwordEncoder.encode(dto.getSenha());
+        usuario.setSenha(senhaCriptografada);
+
         return usuarioRepository.save(usuario);
     }
 
@@ -41,16 +46,26 @@ public class UsuarioService {
     public Usuario atualizar(Long id, UsuarioRequestDTO dto) {
         return buscarPorId(id).map(usuarioExistente -> {
             
-            // Regra de Negócio: Se o email mudou, verificar unicidade
+            // 1. Regra de Negócio: Se o email mudou, verificar unicidade
             if (!usuarioExistente.getEmail().equals(dto.getEmail())) {
                  if (usuarioRepository.findByEmail(dto.getEmail()).isPresent()) {
                     throw new RegraDeNegocioException("Novo e-mail já cadastrado para outro usuário.");
                 }
             }
             
+            // 2. Atualiza dados básicos
             usuarioExistente.setNome(dto.getNome());
             usuarioExistente.setEmail(dto.getEmail());
             usuarioExistente.setTelefone(dto.getTelefone());
+
+            // 3. 🔑 TRATAMENTO DA SENHA:
+            // Checa se o DTO enviou uma nova senha para atualização.
+            if (dto.getSenha() != null && !dto.getSenha().trim().isEmpty()) {
+                // Se sim, criptografa a nova senha e define
+                String novaSenhaCriptografada = passwordEncoder.encode(dto.getSenha());
+                usuarioExistente.setSenha(novaSenhaCriptografada);
+            }
+            // Se o DTO não enviou a senha (null/vazio), a senha existente (hash) é mantida.
             
             return usuarioRepository.save(usuarioExistente);
         }).orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com ID: " + id));
