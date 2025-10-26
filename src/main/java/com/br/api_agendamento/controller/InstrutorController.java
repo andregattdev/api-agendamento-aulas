@@ -1,63 +1,78 @@
 package com.br.api_agendamento.controller;
 
 import com.br.api_agendamento.dto.InstrutorRequestDTO;
+import com.br.api_agendamento.dto.InstrutorResponseDTO; // NOVO IMPORT
 import com.br.api_agendamento.model.Instrutor;
 import com.br.api_agendamento.services.InstrutorService;
 
-import jakarta.validation.Valid; // Importante para as validações do DTO
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors; // Necessário para a conversão de lista
 
 @RestController
 @RequestMapping("/instrutores")
 public class InstrutorController {
 
     @Autowired
-    private  InstrutorService instrutorService;
+    private InstrutorService instrutorService;
 
     // POST: Cria um novo instrutor
     @PostMapping
-    // @Valid: Dispara as validações do Bean Validation definidas no InstrutorRequestDTO
-    public ResponseEntity<Instrutor> criarInstrutor(@RequestBody @Valid InstrutorRequestDTO dto) {
+    @PreAuthorize("hasRole('ADMIN')")
+    // Retorna InstrutorResponseDTO
+    public ResponseEntity<InstrutorResponseDTO> criarInstrutor(@RequestBody @Valid InstrutorRequestDTO dto) {
         Instrutor novoInstrutor = instrutorService.salvar(dto);
-        // Retorna HTTP 201 CREATED
-        return new ResponseEntity<>(novoInstrutor, HttpStatus.CREATED); 
+        // Retorna o objeto mapeado para o DTO
+        return new ResponseEntity<>(new InstrutorResponseDTO(novoInstrutor), HttpStatus.CREATED);
     }
 
     // GET: Lista todos os instrutores
     @GetMapping
-    public ResponseEntity<List<Instrutor>> listarTodos() {
-        List<Instrutor> instrutores = instrutorService.buscarTodos();
-        return ResponseEntity.ok(instrutores);
+    @PreAuthorize("isAuthenticated()")
+    // Retorna Lista de InstrutorResponseDTO
+    public ResponseEntity<List<InstrutorResponseDTO>> listarTodos() {
+        List<InstrutorResponseDTO> dtos = instrutorService.buscarTodos().stream()
+                // Converte cada Instrutor para InstrutorResponseDTO usando o construtor
+                .map(InstrutorResponseDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     // GET: Busca instrutor por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Instrutor> buscarPorId(@PathVariable Long id) {
-        // Usa o orElse para retornar HTTP 404 se não for encontrado
+    @PreAuthorize("isAuthenticated()")
+    // Retorna InstrutorResponseDTO
+    public ResponseEntity<InstrutorResponseDTO> buscarPorId(@PathVariable Long id) {
+        // Mapeia o Optional<Instrutor> para Optional<InstrutorResponseDTO> antes de
+        // construir a resposta
         return instrutorService.buscarPorId(id)
+                .map(InstrutorResponseDTO::new)
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build()); 
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     // PUT: Atualiza um instrutor
     @PutMapping("/{id}")
-    public ResponseEntity<Instrutor> atualizarInstrutor(@PathVariable Long id, 
-                                                        @RequestBody @Valid InstrutorRequestDTO dto) {
-        // A lógica de exceção (Instrutor não encontrado) está no Service
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('INSTRUTOR') and #id == authentication.principal.id)")
+    // Retorna InstrutorResponseDTO
+    public ResponseEntity<InstrutorResponseDTO> atualizarInstrutor(@PathVariable Long id,
+            @RequestBody @Valid InstrutorRequestDTO dto) {
         Instrutor instrutorAtualizado = instrutorService.atualizar(id, dto);
-        return ResponseEntity.ok(instrutorAtualizado);
+        // Retorna o objeto mapeado para o DTO
+        return ResponseEntity.ok(new InstrutorResponseDTO(instrutorAtualizado));
     }
 
     // DELETE: Deleta um instrutor
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletarInstrutor(@PathVariable Long id) {
         instrutorService.deletarPorId(id);
-        // Retorna HTTP 204 NO CONTENT
-        return ResponseEntity.noContent().build(); 
+        return ResponseEntity.noContent().build();
     }
 }

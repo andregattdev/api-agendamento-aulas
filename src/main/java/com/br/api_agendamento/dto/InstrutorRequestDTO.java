@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+
 @Data
 public class InstrutorRequestDTO {
 
@@ -16,6 +17,12 @@ public class InstrutorRequestDTO {
     @Email(message = "Formato de e-mail inválido.")
     private String email;
 
+    @NotBlank(message = "O telefone é obrigatório.") 
+    private String telefone; 
+
+    @NotBlank(message = "A senha é obrigatória.") 
+    private String senha; 
+    
     @NotBlank(message = "A especialidade é obrigatória.")
     private String especialidade;
 }

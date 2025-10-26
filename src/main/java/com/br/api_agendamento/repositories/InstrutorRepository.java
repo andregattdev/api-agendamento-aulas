@@ -10,7 +10,7 @@ import com.br.api_agendamento.model.Instrutor;
 
 public interface InstrutorRepository extends JpaRepository<Instrutor, Long> {
     List<Instrutor> findByEspecialidadeContainingIgnoreCase(String especialidade);
-    Optional<Instrutor> findByEmail(String email);
+    Optional<Instrutor> findByUsuarioEmail(String email);
 
 
 }

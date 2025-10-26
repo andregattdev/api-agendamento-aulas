@@ -10,6 +10,8 @@ import jakarta.persistence.JoinColumn;
 import java.math.BigDecimal; 
 // Remova: import java.time.Duration; 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Data
 @Entity
 public class Servico {
@@ -20,8 +22,6 @@ public class Servico {
 
     private String nome; 
     
-    // CORRIGIDO: Mapeamento mais simples para o Banco de Dados
-    // Armazena a duração em minutos (ex: 60, 90, 30)
     private Integer duracaoMinutos; 
     
     
@@ -29,6 +29,7 @@ public class Servico {
 
     @ManyToOne 
     @JoinColumn(name = "instrutor_id", nullable = false)
+    @JsonIgnore
     private Instrutor instrutor;
 
 

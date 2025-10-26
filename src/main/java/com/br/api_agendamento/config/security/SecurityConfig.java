@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager; // NOVO IMPORT
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration; // NOVO IMPORT
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -14,12 +15,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.br.api_agendamento.services.AutenticacaoService;
 
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+
 import static org.springframework.security.config.Customizer.withDefaults;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Autowired
@@ -56,13 +60,16 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
-                        // Vamos liberar o endpoint de login/auth que criaremos em seguida:
-                        // .requestMatchers("/auth/**").permitAll() // Se usarmos /auth/login
-                        // Mantemos TUDO liberado por enquanto para testar o CRUD
-                        .anyRequest().permitAll())
-                .httpBasic(withDefaults());
+                        // 1. Libera o login e a criação de usuário para acesso público
+                        .requestMatchers("/auth/login", "/usuarios").permitAll()
 
-        // 3. ADICIONA O FILTRO JWT antes do filtro padrão de autenticação
+                        // 2. TODAS as outras rotas exigem que o usuário esteja autenticado (tenha um
+                        // token válido)
+                        .anyRequest().authenticated())
+                // Você também precisa definir a política de sessão como STATELESS para JWT
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        // O filtro JWT precisa ser adicionado aqui
         http.addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
