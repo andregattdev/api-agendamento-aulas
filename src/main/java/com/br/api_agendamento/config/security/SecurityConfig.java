@@ -2,8 +2,9 @@ package com.br.api_agendamento.config.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager; // NOVO IMPORT
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration; // NOVO IMPORT
+import org.springframework.http.HttpMethod; // NOVO IMPORT NECESSÁRIO
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -16,8 +17,6 @@ import com.br.api_agendamento.services.AutenticacaoService;
 
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-
-import static org.springframework.security.config.Customizer.withDefaults;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -32,21 +31,17 @@ public class SecurityConfig {
     @Autowired
     private SecurityFilter securityFilter;
 
-    // Injeta o nosso UserDetailsService
-    public SecurityConfig(AutenticacaoService autenticacaoService) {
-        this.autenticacaoService = autenticacaoService;
-        this.securityFilter = securityFilter;
-    }
+    // Você pode remover este construtor se usar @Autowired nos campos
+    // public SecurityConfig(AutenticacaoService autenticacaoService) {
+    //     this.autenticacaoService = autenticacaoService;
+    //     this.securityFilter = securityFilter;
+    // }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Define o Gerenciador de Autenticação.
-     * O Spring Security usa isso para processar as requisições de login.
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
@@ -59,15 +54,17 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         // 1. Libera o login e a criação de usuário para acesso público
-                        .requestMatchers("/auth/login", "/usuarios").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/login", "/usuarios").permitAll()
 
-                        // 2. TODAS as outras rotas exigem que o usuário esteja autenticado (tenha um
-                        // token válido)
-                        .anyRequest().authenticated())
-                // Você também precisa definir a política de sessão como STATELESS para JWT
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                        // 🚨 CORREÇÃO PRINCIPAL: Adiciona a regra de autorização para AGENDAMENTO
+                        // Somente usuários com o papel CLIENTE podem fazer POST em /agendamentos
+                        .requestMatchers(HttpMethod.POST, "/agendamentos").hasRole("CLIENTE")
+
+                        // 2. TODAS as outras rotas exigem que o usuário esteja autenticado (token válido)
+                        .anyRequest().authenticated());
 
         // O filtro JWT precisa ser adicionado aqui
         http.addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);

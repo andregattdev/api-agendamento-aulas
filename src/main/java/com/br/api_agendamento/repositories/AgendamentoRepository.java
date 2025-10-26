@@ -1,31 +1,37 @@
 package com.br.api_agendamento.repositories;
 
-import com.br.api_agendamento.model.Agendamento;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Repository
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.br.api_agendamento.model.Agendamento;
+import com.br.api_agendamento.model.StatusAgendamento;
+
 public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> {
 
-    // NOVO MÉTODO: Checa se há conflito de horário para um instrutor
+    // Checa se há conflito de horário para um instrutor
     @Query("SELECT COUNT(a) > 0 FROM Agendamento a " +
-           "WHERE a.instrutor.id = :instrutorId " + // 1. Mesmo instrutor
-           "AND (" +
-           // 2. Condição de sobreposição:
-           // O agendamento existente (a) começa antes do novo terminar (novaDataHoraFim)
-           // E o novo agendamento (novaDataHoraInicio) começa antes do existente terminar (a.dataHoraFim)
-           "    a.dataHoraInicio < :novaDataHoraFim AND :novaDataHoraInicio < a.dataHoraFim" +
-           ")")
+            "WHERE a.instrutor.id = :instrutorId " +
+            "AND a.status IN :statusList " +
+            "AND (" +
+            "a.dataHoraInicio < :novaDataHoraFim AND :novaDataHoraInicio < a.dataHoraFim" +
+            ")")
     boolean existeConflito(
             @Param("instrutorId") Long instrutorId,
             @Param("novaDataHoraInicio") LocalDateTime novaDataHoraInicio,
-            @Param("novaDataHoraFim") LocalDateTime novaDataHoraFim);
-    
-    // Outros métodos READ...
+            @Param("novaDataHoraFim") LocalDateTime novaDataHoraFim,
+            @Param("statusList") List<StatusAgendamento> statusList);
+
+    List<Agendamento> findByInstrutorIdAndDataHoraInicioBetweenAndStatus(
+            Long instrutorId,
+            LocalDateTime inicio,
+            LocalDateTime fim,
+            StatusAgendamento status);
+
     List<Agendamento> findByClienteId(Long clienteId);
+
+    List<Agendamento> findByInstrutorId(Long instrutorId);
 }

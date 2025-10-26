@@ -1,19 +1,9 @@
 package com.br.api_agendamento.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
+import jakarta.persistence.*;
 import lombok.Data;
 
-import java.time.LocalDateTime; // Ideal para data e hora precisas
-
-// Enum para o Status do Agendamento (vamos criar este abaixo)
-
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -23,28 +13,31 @@ public class Agendamento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private LocalDateTime dataHoraInicio;
-
-    
-    private LocalDateTime dataHoraFim; 
-
-    @ManyToOne 
+    // Relacionamento Many-to-One: O agendamento é feito por um cliente (Usuario)
+    @ManyToOne
     @JoinColumn(name = "cliente_id", nullable = false)
-    private Usuario cliente; 
+    private Usuario cliente;
 
-    // 2. O Serviço/Aula (Um Agendamento tem 1 Serviço)
-    @ManyToOne 
+    // Relacionamento Many-to-One: O serviço agendado
+    @ManyToOne
     @JoinColumn(name = "servico_id", nullable = false)
     private Servico servico;
 
-    @ManyToOne 
+    // Relacionamento Many-to-One: O instrutor que prestará o serviço.
+    @ManyToOne
     @JoinColumn(name = "instrutor_id", nullable = false)
     private Instrutor instrutor;
 
-    @Enumerated(EnumType.STRING)
-    private StatusAgendamento status = StatusAgendamento.CONFIRMADO;
-    
-    private String observacoes; 
+    // Data e Hora do início do agendamento
+    @Column(nullable = false)
+    private LocalDateTime dataHoraInicio;
 
-   
+ 
+    @Column(nullable = false)
+    private LocalDateTime dataHoraFim;
+
+    // Status do agendamento (Ex: PENDENTE, CONFIRMADO, CANCELADO, CONCLUIDO)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatusAgendamento status;
 }
